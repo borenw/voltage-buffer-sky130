@@ -1,0 +1,18 @@
+* Operating point, power, DC transfer (range/offset)
+.lib "PDK_ROOT/sky130A/libs.tech/ngspice/sky130.lib.spice" tt
+.include "vbuffer.spice"
+.param VDD=1.8
+.param VCM=0.6
+Vdd vdd 0 {VDD}
+Vin vinp 0 {VCM}
+Xbuf vdd 0 vinp vout vout vbuffer        $ closed unity-gain loop
+CLd vout 0 5p
+.control
+op
+let isup=-i(Vdd)
+let pwr=isup*VDD
+print isup pwr
+dc Vin 0.15 1.2 0.005
+wrdata dc_transfer.txt v(vout)
+.endc
+.end

@@ -1,0 +1,46 @@
+**********************************************************************
+* SKY130 unity-gain voltage buffer
+*   - 5T OTA: NMOS diff pair (M1,M2), PMOS mirror load (M3,M4),
+*     NMOS tail current source (M5)
+*   - Output: NMOS source follower (M6) with source (emitter-style)
+*     degeneration resistor Rdeg (high-poly) in series with its source
+*   - Bottom of Rdeg = VOUT: tied to a current sink (M7) and fed back
+*     to the OTA negative input (done at the testbench level)
+*   - Bias: ideal Iref -> diode Mbias -> mirrored to M5 (tail) & M7 (sink)
+*
+* Ports:  vdd  vss  vinp  vinn  vout
+**********************************************************************
+.subckt vbuffer vdd vss vinp vinn vout
++ W1=8   L1=1     $ input diff pair
++ W3=10  L3=1     $ pmos mirror load
++ W5=10  L5=1     $ tail current source
++ W6=24  L6=0.5   $ nmos source follower
++ W7=20  L7=1     $ output current sink
++ Wb=5   Lb=1     $ bias diode
++ Lr=2            $ degeneration resistor length (w=0.35um, ~2.85k/um-ish)
++ Cc=4p           $ dominant-pole compensation cap at OTA output (d2) -> PM~66deg
++ Rz=0            $ optional lead-comp series resistor
++ Iref=10u
+
+* ---- bias branch ----
+Iref   vdd  nbias  dc {Iref}
+XMb    nbias nbias vss vss sky130_fd_pr__nfet_01v8 w={Wb} l={Lb}
+
+* ---- 5T OTA ---- (LVT input pair lowers input-common-mode floor)
+XM1    d1   vinp  tail vss sky130_fd_pr__nfet_01v8_lvt w={W1} l={L1}
+XM2    d2   vinn  tail vss sky130_fd_pr__nfet_01v8_lvt w={W1} l={L1}
+XM4    d1   d1    vdd  vdd sky130_fd_pr__pfet_01v8 w={W3} l={L3}
+XM3    d2   d1    vdd  vdd sky130_fd_pr__pfet_01v8 w={W3} l={L3}
+XM5    tail nbias vss  vss sky130_fd_pr__nfet_01v8 w={W5} l={L5}
+
+* ---- output stage: source follower + degeneration R + sink ----
+* LVT source follower raises output ceiling (lower Vgs)
+XM6    vdd  d2    sfs  vss sky130_fd_pr__nfet_01v8_lvt w={W6} l={L6}
+XRdeg  sfs  vout  vss  sky130_fd_pr__res_high_po_0p35 w=0.35 l={Lr}
+XM7    vout nbias vss  vss sky130_fd_pr__nfet_01v8 w={W7} l={L7}
+
+* dominant-pole compensation at OTA high-impedance output node d2
+Ccmp   d2   ncz   {Cc}
+Rcmp   ncz  vss   {Rz}
+
+.ends vbuffer

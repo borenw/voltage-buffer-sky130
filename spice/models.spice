@@ -1,0 +1,5 @@
+* SkyWater SKY130 device models for ngspice (open-source PDK).
+* EDIT the path below to point at your sky130A install
+* (e.g. installed via `volare enable --pdk sky130 <version>`).
+* Corner section: tt (use tt_mm for mismatch Monte-Carlo).
+.lib "PDK_ROOT/sky130A/libs.tech/ngspice/sky130.lib.spice" tt

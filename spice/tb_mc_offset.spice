@@ -1,0 +1,25 @@
+* Monte-Carlo input-referred offset (device mismatch only -> tt_mm corner)
+.lib "PDK_ROOT/sky130A/libs.tech/ngspice/sky130.lib.spice" tt_mm
+.include "vbuffer.spice"
+Vdd vdd 0 1.8
+Vin vinp 0 0.6
+Xbuf vdd 0 vinp vout vout vbuffer
+CLd vout 0 5p
+.control
+let n=300
+let i=0
+let sx=0
+let sx2=0
+dowhile i < n
+  reset
+  op
+  let off=(v(vinp)-v(vout))*1e3
+  let sx=sx+off
+  let sx2=sx2+off*off
+  let i=i+1
+end
+let mean=sx/n
+let sigma=sqrt(sx2/n - mean*mean)
+print mean sigma
+.endc
+.end

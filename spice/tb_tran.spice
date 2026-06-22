@@ -1,0 +1,12 @@
+* Transient: 100 mV step -> settling + overshoot
+.lib "PDK_ROOT/sky130A/libs.tech/ngspice/sky130.lib.spice" tt
+.include "vbuffer.spice"
+Vdd vdd 0 1.8
+Vin vinp 0 dc 0.6 pulse(0.6 0.7 1u 100p 100p 5u 10u)
+Xbuf vdd 0 vinp vout vout vbuffer
+CLd vout 0 5p
+.control
+tran 1n 9u
+wrdata tran_step.txt v(vinp) v(vout)
+.endc
+.end

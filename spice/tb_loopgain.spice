@@ -1,0 +1,18 @@
+* Loop gain via series voltage injection:  T = -v(vout)/v(vinn)
+.lib "PDK_ROOT/sky130A/libs.tech/ngspice/sky130.lib.spice" tt
+.include "vbuffer.spice"
+Vdd vdd 0 1.8
+Vin vinp 0 0.6
+Xbuf vdd 0 vinp vinn vout vbuffer
+Vinj vinn vout dc 0 ac 1                  $ 0V DC keeps loop closed; AC inject
+CLd vout 0 5p
+.control
+op
+ac dec 50 1 1e9
+let T=-v(vout)/v(vinn)
+meas ac dcgain find db(T) at=1
+meas ac ugf when db(T)=0 cross=1
+meas ac ph_ugf find 180/pi*ph(T) when db(T)=0 cross=1
+print dcgain ugf ph_ugf
+.endc
+.end
