@@ -13,6 +13,10 @@ and contains no proprietary data.
 
 ![schematic](schematic/sky130_schematic.svg)
 
+**DC operating point** (VDD = 1.8 V, Vin = 0.6 V, TT, 27 °C, I_supply = 75.9 µA):
+
+![schematic with DC operating point](doc/schematic_dc.png)
+
 | Block | Devices | Function |
 |-------|---------|----------|
 | **5T OTA** | NMOS diff pair `M1/M2`, PMOS mirror load `M3/M4`, NMOS tail `M5` | single-stage transconductance amplifier |
@@ -51,6 +55,17 @@ a 300-point device-mismatch Monte-Carlo (`tt_mm`).
 | **Output range** (gain 0.95–1.05) | — | **0.15 – 0.75 V** |
 | Active device area Σ(W·L) | — | **84 µm²** (+ 4 pF comp cap) |
 
+### Loop-gain frequency response
+
+Series voltage injection in the feedback path (`T = −v(vout)/v(vinn)`). Red dashed
+lines are the stability specs; the orange marker is the unity-gain crossover.
+
+![loop-gain Bode plot](doc/loopgain_bode.png)
+
+DC loop gain **36.3 dB**, unity-gain frequency **3.66 MHz**, phase at crossover
+**−114°** → **phase margin 66°** (spec ≥ 60°). Reproduce with
+`ngspice -b tb_loopgain.spice`.
+
 ### Process-corner results (Vout = 0.6 V)
 
 | Corner | Power | Sys. offset | Loop gain | UGF | Phase margin |
@@ -72,14 +87,30 @@ Phase margin stays 64–69° and gain ≈ 36 dB across corners → robust.
   NMOS-input / NMOS-follower buffer. A deep-nwell follower (bulk = source) or a
   complementary output stage would extend the high side.
 
-- **Supply headroom.** Holding `Vin = 0.6 V` and sweeping VDD downward, the output
-  tracks the input down to a **knee at VDD ≈ 1.45 V**; below it the source follower
-  loses gate drive (`d2` can no longer reach `Vout + I·Rdeg + Vgs6`) and `Vout`
-  collapses toward ground. Above the knee the output holds its regulated ~591 mV
-  plateau (the ~9 mV droop from 0.6 V is the single-stage loop-gain error).
-  Reproduce with `ngspice -b tb_vdd_headroom.spice`.
+- **Supply headroom — what sets the knee.** Holding `Vin = 0.6 V` and sweeping VDD
+  downward, the output tracks the input down to a **knee at VDD ≈ 1.45 V**, then
+  collapses toward ground. The cause is a **stacked-headroom limit at the source-
+  follower gate `d2`**, which is the OTA's high-impedance output node:
+
+  To hold `Vout = 0.6 V`, the follower `M6` must sit at
+  `d2 = Vout + I·Rdeg + Vgs6`. From the DC operating point that is
+  `0.59 + 0.16 + 0.68 ≈ 1.43 V` — i.e. **`d2` has to be driven to within ~0.37 V of
+  the 1.8 V rail**. The PMOS mirror load (`M3`) can only pull `d2` that high while it
+  stays saturated, needing `VDD − d2 > |Vdsat,M3|`. As VDD falls toward ~1.45 V, `d2`
+  pins against the top rail (`d2 → VDD`), `M3` drops into triode, the OTA loses gain,
+  `M6`'s gate drive stops rising — and `Vout` can no longer follow. Measured `d2`:
+  **1.431 V @ VDD 1.8 → 1.395 V @ 1.45 → 1.198 V (= rail) @ 1.2**. So the knee is a
+  **top-rail / PMOS-mirror headroom limit**, not an input-pair or tail limit. It moves
+  with the held output: a lower `Vout` target pushes the knee to a lower VDD. A
+  deep-nwell follower (no body effect → smaller `Vgs6`) or a PMOS/complementary output
+  would relax it. Reproduce with `ngspice -b tb_vdd_headroom.spice`.
 
 ![Vout vs VDD headroom sweep](doc/vout_vs_vdd.png)
+
+- **Bias reference.** There is no external `Vref` node — the circuit self-biases. The
+  ideal 10 µA `Iref` into the diode-connected `MB` sets the gate-bias rail
+  **`nbias ≈ 0.70 V`**, which mirrors to the tail (`M5`) and output sink (`M7`). The
+  *signal* reference being buffered is simply `Vin` (0.6 V in all sims here).
 - **Accuracy** is set by the single-stage 36 dB loop gain (≈ 1.5 % gain error). A
   cascode/gain-boosted first stage would reduce the offset further.
 - **The topology ports across nodes and supplies** — only device flavor, sizing, and the
@@ -106,12 +137,15 @@ ngspice -b tb_mc_offset.spice   # 300-pt mismatch Monte-Carlo offset (tt_mm)
 ## Files
 
 ```
-README.md                       this document
-schematic/sky130_schematic.svg   schematic (vector) + .png
-doc/vout_vs_vdd.png              VDD headroom sweep (Vout vs VDD)
-spice/vbuffer.spice              parametrized buffer subcircuit
-spice/models.spice               PDK model include (edit PDK path)
-spice/tb_*.spice                 testbenches (op/dc, loop gain, transient, noise, MC, VDD headroom)
+README.md                          this document
+schematic/sky130_schematic.svg      schematic (vector) + .png
+schematic/sky130_schematic_dc.svg   schematic annotated with DC operating point
+doc/schematic_dc.png                annotated schematic (raster)
+doc/loopgain_bode.png               loop-gain Bode plot (gain/PM/UGF)
+doc/vout_vs_vdd.png                 VDD headroom sweep (Vout vs VDD)
+spice/vbuffer.spice                 parametrized buffer subcircuit
+spice/models.spice                  PDK model include (edit PDK path)
+spice/tb_*.spice                    testbenches (op/dc, loop gain, transient, noise, MC, VDD headroom)
 ```
 
 ## License
