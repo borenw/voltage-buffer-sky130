@@ -170,6 +170,15 @@ is set by **threshold-and-floor terms that don't scale with bias current** — s
 levers are the output-stage ones above (`Rdeg`, `Vgs6`, body effect). Reproduce the
 device curve with `tb_vdsat_char.spice`.
 
+This weak-inversion behaviour is classic: the `gm/I_D` sizing metric and the moderate-
+inversion `Vdsat` used here follow the all-region MOS treatment of Silveira *et al.* [1]
+and the EKV charge-based model [2]; that `Vdsat` (equivalently the drain saturation
+voltage) is minimized and floors at a few `kT/q` in weak inversion is developed in
+Binkley [3] and traces to the foundational weak-inversion work of Vittoz & Fellrath [4].
+(The exact floor multiple depends on the `Vdsat` definition — `2n·kT/q ≈ 70 mV` for the
+`2·I_D/g_m` metric plotted here, vs. the ~`4–6·kT/q` often quoted for the classic drain
+saturation voltage — but the *flooring* is the robust, current-independent result.)
+
 ## Reproduce
 
 Requires `ngspice` and the open SKY130 PDK (`volare enable --pdk sky130 <version>`).
@@ -200,6 +209,26 @@ spice/vbuffer.spice                 parametrized buffer subcircuit
 spice/models.spice                  PDK model include (edit PDK path)
 spice/tb_*.spice                    testbenches (op/dc, loop gain, transient, noise, MC, VDD headroom)
 ```
+
+## References
+
+[1] F. Silveira, D. Flandre, and P. G. A. Jespers, "A g_m/I_D based methodology for the
+design and optimization of CMOS analog circuits and its application to the synthesis of a
+silicon-on-insulator micropower OTA," *IEEE J. Solid-State Circuits*, vol. 31, no. 9,
+pp. 1314–1319, Sep. 1996, doi: [10.1109/4.535416](https://doi.org/10.1109/4.535416).
+
+[2] C. C. Enz, F. Krummenacher, and E. A. Vittoz, "An analytical MOS transistor model
+valid in all regions of operation and dedicated to low-voltage and low-current
+applications," *Analog Integr. Circuits Signal Process.*, vol. 8, no. 1, pp. 83–114,
+Jul. 1995, doi: [10.1007/BF01239381](https://doi.org/10.1007/BF01239381).
+
+[3] D. M. Binkley, *Tradeoffs and Optimization in Analog CMOS Design*. Chichester, U.K.:
+Wiley, 2008, ch. 3 (inversion coefficient; drain–source saturation voltage).
+ISBN 978-0-470-03136-0.
+
+[4] E. Vittoz and J. Fellrath, "CMOS analog integrated circuits based on weak inversion
+operation," *IEEE J. Solid-State Circuits*, vol. 12, no. 3, pp. 224–231, Jun. 1977,
+doi: [10.1109/JSSC.1977.1050882](https://doi.org/10.1109/JSSC.1977.1050882).
 
 ## License
 
