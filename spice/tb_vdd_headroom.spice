@@ -1,0 +1,20 @@
+* VDD headroom sweep (closed-loop unity buffer).
+*   Vin held at the nominal 0.6 V operating point; sweep VDD downward to
+*   find the "knee" below which the NMOS source follower runs out of
+*   headroom and Vout can no longer track Vin.
+.lib "PDK_ROOT/sky130A/libs.tech/ngspice/sky130.lib.spice" tt
+.include "vbuffer.spice"
+
+.param VIN=0.6
+
+Vdd  vdd 0 1.8
+Vin  vinp 0 {VIN}
+Xbuf vdd 0 vinp vout vout vbuffer        $ closed unity-gain loop
+CLd  vout 0 5p
+
+.control
+dc Vdd 0.3 1.8 0.005
+let err = v(vout) - 0.6
+wrdata dc_vdd_headroom.txt v(vout) err
+.endc
+.end

@@ -71,6 +71,15 @@ Phase margin stays 64–69° and gain ≈ 36 dB across corners → robust.
   window is therefore the lower portion of the supply — intrinsic to an
   NMOS-input / NMOS-follower buffer. A deep-nwell follower (bulk = source) or a
   complementary output stage would extend the high side.
+
+- **Supply headroom.** Holding `Vin = 0.6 V` and sweeping VDD downward, the output
+  tracks the input down to a **knee at VDD ≈ 1.45 V**; below it the source follower
+  loses gate drive (`d2` can no longer reach `Vout + I·Rdeg + Vgs6`) and `Vout`
+  collapses toward ground. Above the knee the output holds its regulated ~591 mV
+  plateau (the ~9 mV droop from 0.6 V is the single-stage loop-gain error).
+  Reproduce with `ngspice -b tb_vdd_headroom.spice`.
+
+![Vout vs VDD headroom sweep](doc/vout_vs_vdd.png)
 - **Accuracy** is set by the single-stage 36 dB loop gain (≈ 1.5 % gain error). A
   cascode/gain-boosted first stage would reduce the offset further.
 - **The topology ports across nodes and supplies** — only device flavor, sizing, and the
@@ -99,9 +108,10 @@ ngspice -b tb_mc_offset.spice   # 300-pt mismatch Monte-Carlo offset (tt_mm)
 ```
 README.md                       this document
 schematic/sky130_schematic.svg   schematic (vector) + .png
+doc/vout_vs_vdd.png              VDD headroom sweep (Vout vs VDD)
 spice/vbuffer.spice              parametrized buffer subcircuit
 spice/models.spice               PDK model include (edit PDK path)
-spice/tb_*.spice                 testbenches (op/dc, loop gain, transient, noise, MC)
+spice/tb_*.spice                 testbenches (op/dc, loop gain, transient, noise, MC, VDD headroom)
 ```
 
 ## License
