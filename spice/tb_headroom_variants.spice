@@ -1,0 +1,22 @@
+* VDD headroom sweep for design-variant comparison.
+*   Edit the parameter overrides on the Xbuf line to reproduce each curve:
+*     baseline           :  (no overrides)
+*     0.5x diff-pair bias :  W5=5            (tail 20 uA -> 10 uA; output sink M7 unchanged)
+*     2x input W1         :  W1=16
+*     output-stage fix    :  Lr=1 W6=48      (halve I*Rdeg drop + lower Vgs6)
+.lib "PDK_ROOT/sky130A/libs.tech/ngspice/sky130.lib.spice" tt
+.include "vbuffer.spice"
+
+Vdd  vdd 0 1.8
+Vin  vinp 0 0.6
+Xbuf vdd 0 vinp vout vout vbuffer        $ <-- add W5=5 | W1=16 | Lr=1 W6=48 here
+CLd  vout 0 5p
+
+.control
+op
+let isup = -i(Vdd)
+print isup
+dc Vdd 0.3 1.8 0.005
+wrdata dc_headroom_variant.txt v(vout)
+.endc
+.end

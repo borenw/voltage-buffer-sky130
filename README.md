@@ -119,6 +119,31 @@ Phase margin stays 64–69° and gain ≈ 36 dB across corners → robust.
 
 ---
 
+## VDD headroom improvement
+
+Because the knee is set by the **output branch** (`d2 = Vout + I·Rdeg + Vgs6` pinning
+against the top rail through the PMOS mirror), the effective levers live in the output
+stage — not the input pair. The overlay below sweeps VDD (Vin = 0.6 V) for two commonly
+proposed input-side changes versus an output-stage fix.
+
+![VDD headroom variants](doc/vdd_headroom_improve.png)
+
+| Variant | Change | Knee VDD | I_supply | Effect on headroom |
+|---------|--------|----------|----------|--------------------|
+| Baseline | tail 20 µA, W1 = 8, Rdeg ≈ 2.85 kΩ | **1.45 V** | 76 µA | — |
+| 0.5× diff-pair bias | `W5 = 5` (tail 20 → 10 µA) | **1.45 V** | 70 µA | **none** (saves power only) |
+| 2× input W1 | `W1 = 16` | **1.45 V** | 79 µA | **none** (helps offset, not headroom) |
+| Output-stage fix | `Lr = 1` (Rdeg 0.5×) + `W6 = 48` (2×) | **1.36 V** | 76 µA | **−89 mV** knee |
+
+**Takeaway:** halving the diff-pair bias or doubling the input-pair width leaves the
+knee essentially unchanged (≈ 1.45 V) — they trade power, gain, bandwidth and offset,
+but the source-follower gate still has to reach `Vout + I·Rdeg + Vgs6 ≈ 1.43 V`, so the
+top-rail limit is unmoved. Attacking that stack directly — **smaller `Rdeg` drop** (less
+`I·Rdeg`) and a **wider follower** (lower `Vgs6`) — pushes the knee ~90 mV lower at the
+same supply current. Removing the follower body effect (deep-nwell, bulk = source) or a
+PMOS/complementary output stage would extend it further. Reproduce with
+`tb_headroom_variants.spice` (edit the `Xbuf` parameter overrides per the header).
+
 ## Reproduce
 
 Requires `ngspice` and the open SKY130 PDK (`volare enable --pdk sky130 <version>`).
@@ -143,6 +168,7 @@ schematic/sky130_schematic_dc.svg   schematic annotated with DC operating point
 doc/schematic_dc.png                annotated schematic (raster)
 doc/loopgain_bode.png               loop-gain Bode plot (gain/PM/UGF)
 doc/vout_vs_vdd.png                 VDD headroom sweep (Vout vs VDD)
+doc/vdd_headroom_improve.png        headroom variant overlay (bias/W1/output-stage)
 spice/vbuffer.spice                 parametrized buffer subcircuit
 spice/models.spice                  PDK model include (edit PDK path)
 spice/tb_*.spice                    testbenches (op/dc, loop gain, transient, noise, MC, VDD headroom)
