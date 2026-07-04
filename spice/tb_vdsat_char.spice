@@ -1,0 +1,18 @@
+* Vdsat-vs-Id characterization of the PMOS mirror device (pfet_01v8, W/L=10/1).
+*   Sweep the gate to move Id across many decades at fixed |Vds| in saturation.
+*   Post-process:  Vdsat ~ 2*Id/gm   (gm = dId/dVsg).
+*   Shows Vdsat follows sqrt(Id) in strong inversion but floors at ~2n*kT/q
+*   (~70-80 mV) in weak/moderate inversion — independent of current.
+.lib "PDK_ROOT/sky130A/libs.tech/ngspice/sky130.lib.spice" tt
+
+Vs vs 0 1.8
+Vd vd 0 0.9                                $ |Vds| = 0.9 V keeps the device saturated
+Vg vg 0 1.8
+Xp vd vg vs vs sky130_fd_pr__pfet_01v8 w=10 l=1
+
+.control
+dc Vg 1.8 0.0 -0.005
+let id = -i(Vd)
+wrdata dc_vdsat_char.txt id                $ col: Vg(scale) Id ; compute 2*Id/gm offline
+.endc
+.end

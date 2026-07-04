@@ -144,6 +144,32 @@ same supply current. Removing the follower body effect (deep-nwell, bulk = sourc
 PMOS/complementary output stage would extend it further. Reproduce with
 `tb_headroom_variants.spice` (edit the `Xbuf` parameter overrides per the header).
 
+### Why lowering the bias current can't reclaim headroom — the Vdsat floor
+
+The intuitive argument is that less current → lower overdrive `Vov` → the PMOS mirror
+`M3` stays saturated closer to the rail, so `d2` gets more room and the knee drops. The
+first half is even *observable* in the op point (halving the tail current lifts the diode
+node `d1` by ~44 mV as `Vsg` drops). But it buys almost nothing at the knee, and the
+reason is **`Vdsat` does not keep shrinking with current** — it floors in weak inversion:
+
+![Vdsat floors in weak inversion](doc/vdsat_floor.png)
+
+Characterizing the actual `pfet_01v8` mirror device (`Vdsat ≈ 2·I_D/g_m`):
+
+- In **strong inversion** `Vdsat = Vov ∝ √I_D` — the square-law your intuition assumes.
+- Below ~a few µA the device slides into **moderate/weak inversion**, where `g_m/I_D`
+  saturates at `1/(n·V_T)` and therefore **`Vdsat → 2n·kT/q ≈ 70–80 mV`, independent of
+  current.** (The model's `nfactor ≈ 1.34`, and `|Vth0| = 1.06 V` for this pfet.)
+- The mirror already runs at ~10 µA in **moderate** inversion (`Vdsat ≈ 190 mV`). Halving
+  it to 5 µA drops `Vdsat` only to ~150 mV — not the √2 the square law predicts — and no
+  amount of current starving gets below the ~80 mV floor.
+
+Since the knee sits at `VDD ≈ d2 + Vdsat,M3 = 1.43 V + Vdsat`, the best the current knob
+could ever do is `1.43 + 0.08 ≈ 1.51 V`, and in practice it moves a few mV. The headroom
+is set by **threshold-and-floor terms that don't scale with bias current** — so the real
+levers are the output-stage ones above (`Rdeg`, `Vgs6`, body effect). Reproduce the
+device curve with `tb_vdsat_char.spice`.
+
 ## Reproduce
 
 Requires `ngspice` and the open SKY130 PDK (`volare enable --pdk sky130 <version>`).
@@ -169,6 +195,7 @@ doc/schematic_dc.png                annotated schematic (raster)
 doc/loopgain_bode.png               loop-gain Bode plot (gain/PM/UGF)
 doc/vout_vs_vdd.png                 VDD headroom sweep (Vout vs VDD)
 doc/vdd_headroom_improve.png        headroom variant overlay (bias/W1/output-stage)
+doc/vdsat_floor.png                 Vdsat-vs-Id weak-inversion floor (pfet mirror)
 spice/vbuffer.spice                 parametrized buffer subcircuit
 spice/models.spice                  PDK model include (edit PDK path)
 spice/tb_*.spice                    testbenches (op/dc, loop gain, transient, noise, MC, VDD headroom)
