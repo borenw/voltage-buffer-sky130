@@ -170,11 +170,14 @@ is set by **threshold-and-floor terms that don't scale with bias current** — s
 levers are the output-stage ones above (`Rdeg`, `Vgs6`, body effect). Reproduce the
 device curve with `tb_vdsat_char.spice`.
 
-This weak-inversion behaviour is classic: the `gm/I_D` sizing metric and the moderate-
-inversion `Vdsat` used here follow the all-region MOS treatment of Silveira *et al.* [1]
-and the EKV charge-based model [2]; that `Vdsat` (equivalently the drain saturation
-voltage) is minimized and floors at a few `kT/q` in weak inversion is developed in
-Binkley [3] and traces to the foundational weak-inversion work of Vittoz & Fellrath [4].
+This weak-inversion behaviour is classic. The same curve appears in the literature:
+Silveira *et al.* [1, **Fig. 1**] plot `g_m/I_D` vs `I_D/(W·L⁻¹)` — the **reciprocal** of
+the chart above (`Vdsat ≈ 2·I_D/g_m`), so their `g_m/I_D` plateau at its maximum
+(~35 V⁻¹) in weak inversion is exactly this `Vdsat` floor at its minimum. The **literal**
+`Vdsat`-vs-current flooring is developed in Binkley [3, **§3.7.2–3.7.3, pp. 80–89**]
+(effective `V_EFF` and drain–source saturation voltage vs inversion coefficient), on the
+all-region EKV basis [2], tracing to the foundational weak-inversion work of Vittoz &
+Fellrath [4].
 (The exact floor multiple depends on the `Vdsat` definition — `2n·kT/q ≈ 70 mV` for the
 `2·I_D/g_m` metric plotted here, vs. the ~`4–6·kT/q` often quoted for the classic drain
 saturation voltage — but the *flooring* is the robust, current-independent result.)
